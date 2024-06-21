@@ -139,7 +139,7 @@ def interpret_message(msg: str) -> tuple:
         client = boto3.client("s3")
 
     # Extract as JSON dictionary
-    msg_json = json.loads(msg)
+    msg_json = json.loads(msg) 
     workspace_name = msg_json["spec"]["aws"]["s3"]["buckets"][0]["path"]
     if workspace_name.endswith("/"):
         workspace_name = workspace_name.rstrip("/")
