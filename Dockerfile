@@ -11,7 +11,7 @@ COPY templates/ /app/templates
 
 RUN pip install -r requirements.txt
 
-COPY /catalog-generator /app/catalog-generator
+COPY /catalog_generator /app/catalog_generator
 
 
-CMD ["python", "-m", "catalog-generator"]
+CMD ["python", "-m", "catalog_generator"]
