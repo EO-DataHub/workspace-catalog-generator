@@ -1,0 +1,7 @@
+{
+    "type": "Catalog",
+    "id": "{workspace_name}",
+    "title": "Catalog for workspace {workspace_name}",
+    "description": "Datasets in the {workspace_name} workspace",
+    "stac_version": "1.0.0"
+}
