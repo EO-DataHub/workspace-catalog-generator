@@ -140,11 +140,11 @@ def interpret_message(msg: str) -> tuple:
 
     # Extract as JSON dictionary
     msg_json = json.loads(msg) 
-    workspace_name = msg_json["spec"]["aws"]["s3"]["buckets"][0]["path"]
+    workspace_name = msg_json["Spec"]["aws"]["s3"]["buckets"][0]["path"]
     if workspace_name.endswith("/"):
         workspace_name = workspace_name.rstrip("/")
-    bucket_name = msg_json["spec"]["aws"]["s3"]["buckets"][0]["name"]
-    workspace_status = msg_json["event"]
+    bucket_name = msg_json["Spec"]["aws"]["s3"]["buckets"][0]["name"]
+    workspace_status = msg_json["Event"]
 
     created_keys = []
     deleted_keys = []
