@@ -139,7 +139,7 @@ def interpret_message(msg: str) -> tuple:
         client = boto3.client("s3")
 
     # Extract as JSON dictionary
-    msg_json = json.loads(msg) 
+    msg_json = json.loads(msg)
     workspace_name = msg_json["spec"]["aws"]["s3"]["buckets"][0]["path"]
     if workspace_name.endswith("/"):
         workspace_name = workspace_name.rstrip("/")
@@ -207,6 +207,10 @@ def main():
 if __name__ == "__main__":
     pulsar_url = os.environ.get("PULSAR_URL", "")
     client = pulsar.Client(pulsar_url)
-    consumer = client.subscribe(topic="workspace-controller", subscription_name="workspace-catalog-generator")
-    producer = client.create_producer(topic="harvested", producer_name="workspace-catalog-generator")
+    consumer = client.subscribe(
+        topic="workspace-controller", subscription_name="workspace-catalog-generator"
+    )
+    producer = client.create_producer(
+        topic="harvested", producer_name="workspace-catalog-generator"
+    )
     main()
