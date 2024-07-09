@@ -209,7 +209,9 @@ def main(consumer: pulsar.Consumer, producer: pulsar.Producer):
             logging.info(f"Parsing harvested message {msg.data()}")
             decoded_msg = msg.data().decode("utf-8")
             workspace_name, bucket_name, created_keys, deleted_keys = interpret_message(decoded_msg)
-            output_msg = generate_output_message(workspace_name, bucket_name, created_keys, deleted_keys)
+            output_msg = generate_output_message(
+                workspace_name, bucket_name, created_keys, deleted_keys
+            )
             send_pulsar_message(output_msg, producer)
             consumer.acknowledge(msg)
         except Exception as err:
