@@ -123,11 +123,8 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     return deleted_keys
 
 
-def interpret_message(msg: str) -> tuple:
-    """
-    Interpret Pulsar message to create, update or delete catalogs in S3.
-    """
-    # Configure boto3 client ready for data access
+def get_s3_client() -> boto3.client:
+    """Generate boto3 client ready for S3 data access"""
     if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
         session = boto3.session.Session(
             aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
@@ -137,6 +134,16 @@ def interpret_message(msg: str) -> tuple:
 
     else:
         client = boto3.client("s3")
+
+    return client
+
+
+def interpret_message(msg: str) -> tuple:
+    """
+    Interpret Pulsar message to create, update or delete catalogs in S3.
+    """
+    # Configure boto3 client ready for data access
+    client = get_s3_client()
 
     # Extract as JSON dictionary
     msg_json = json.loads(msg)
@@ -161,7 +168,15 @@ def interpret_message(msg: str) -> tuple:
     return workspace_name, bucket_name, created_keys, deleted_keys
 
 
-def publish_to_transformer(
+def send_pulsar_message(msg: str, producer: pulsar.Producer):
+    """
+    Send message via Pulsar.
+    """
+    producer.send((json.dumps(msg)).encode("utf-8"))
+    logging.info(f"Sent transform message {msg}")
+
+
+def generate_output_message(
     workspace_name: str, bucket_name: str, created_keys: List[str], deleted_keys: List[str]
 ):
     """
@@ -180,12 +195,10 @@ def publish_to_transformer(
         "target": f"user-datasets/{workspace_name}",
     }
 
-    # Send message to Pulsar
-    producer.send((json.dumps(output_msg)).encode("utf-8"))
-    logging.info(f"Sent transform message {output_msg}")
+    return output_msg
 
 
-def main():
+def main(consumer: pulsar.Consumer, producer: pulsar.Producer):
     """
     Accept messages from a Pulsar broker.
     """
@@ -196,7 +209,8 @@ def main():
             logging.info(f"Parsing harvested message {msg.data()}")
             decoded_msg = msg.data().decode("utf-8")
             workspace_name, bucket_name, created_keys, deleted_keys = interpret_message(decoded_msg)
-            publish_to_transformer(workspace_name, bucket_name, created_keys, deleted_keys)
+            output_msg = generate_output_message(workspace_name, bucket_name, created_keys, deleted_keys)
+            send_pulsar_message(output_msg, producer)
             consumer.acknowledge(msg)
         except Exception as err:
             logger.debug(traceback.format_exc())
@@ -213,4 +227,4 @@ if __name__ == "__main__":
     producer = client.create_producer(
         topic="harvested", producer_name="workspace-catalog-generator"
     )
-    main()
+    main(consumer, producer)
