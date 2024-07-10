@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.1.1 (09-07-2024)
+
+- Adding unit tests
+- Code clean-up to support more granular testing
+  - Spltting up functions
+  - Adding arguments
+
 ## v0.1.0 (21-06-2024)
 
 - Initial commit for workspace catalog generator
