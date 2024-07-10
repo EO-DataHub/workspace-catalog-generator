@@ -116,6 +116,9 @@ packages = []
 line-length = 100
 target-version = ['py311']
 
+[tool.isort]
+profile = "black"
+
 [tool.ruff]
 line-length = 110
 target-version = "py311"
