@@ -28,13 +28,13 @@ pulsar-client==3.4.0
     # via workspace-catalog-generator (pyproject.toml)
 python-dateutil==2.9.0.post0
     # via botocore
-requests==2.31.0
+requests==2.32.3
     # via workspace-catalog-generator (pyproject.toml)
-s3transfer==0.10.1
+s3transfer==0.10.2
     # via boto3
 six==1.16.0
     # via python-dateutil
-urllib3==1.26.19
+urllib3==2.2.2
     # via
     #   botocore
     #   requests
