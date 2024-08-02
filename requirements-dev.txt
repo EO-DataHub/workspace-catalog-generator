@@ -6,16 +6,16 @@
 #
 black==24.4.2
     # via workspace-catalog-generator (pyproject.toml)
-boto3==1.34.82
+boto3==1.34.152
     # via workspace-catalog-generator (pyproject.toml)
-botocore==1.34.83
+botocore==1.34.152
     # via
     #   boto3
     #   s3transfer
     #   workspace-catalog-generator (pyproject.toml)
 build==1.2.1
     # via pip-tools
-certifi==2024.2.2
+certifi==2024.7.4
     # via
     #   pulsar-client
     #   requests
@@ -67,7 +67,7 @@ pluggy==1.5.0
     # via pytest
 pre-commit==3.8.0
     # via workspace-catalog-generator (pyproject.toml)
-pulsar-client==3.4.0
+pulsar-client==3.5.0
     # via workspace-catalog-generator (pyproject.toml)
 pyproject-hooks==1.1.0
     # via
