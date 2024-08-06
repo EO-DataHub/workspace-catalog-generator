@@ -64,11 +64,11 @@ classifiers = [
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
 dependencies = [
-    "certifi==2024.2.2",
-    "pulsar-client==3.4.0",
-    "boto3==1.34.82",
-    "requests==2.31.0",
-    "botocore==1.34.83",
+    "certifi",
+    "pulsar-client",
+    "boto3",
+    "requests",
+    "botocore",
 ]
 
 # List additional groups of dependencies here (e.g. development
@@ -80,7 +80,7 @@ dependencies = [
 # Similar to `dependencies` above, these must be valid existing
 # projects.
 [project.optional-dependencies] # Optional
-dev = ["pip-tools", "pytest", "pytest-xdist", "pytest-mock", "pytest-watcher", "black", "ruff"]
+dev = ["pip-tools", "pytest", "pytest-xdist", "pytest-mock", "pytest-watcher", "black", "ruff", "isort", "pre-commit"]
 
 # List URLs that are relevant to your project
 #
