@@ -1,0 +1,20 @@
+[
+    {
+        "id": "{workspace_name}",
+        "title": "{workspace_name} Workspace Catalog",
+        "description": "Catalog for {workspace_name} workspace",
+        "file_name_and_path": "{workspace_name}.json"
+    },
+    {
+        "id": "{workspace_name}/processing-results",
+        "title": "{workspace_name} Processing Results",
+        "description": "Catalog for {workspace_name} processing results",
+        "file_name_and_path": "{workspace_name}/processing-results.json"
+    },
+    {
+        "id": "{workspace_name}/saved-data",
+        "title": "{workspace_name} Saved Data",
+        "description": "Catalog for {workspace_name} saved data",
+        "file_name_and_path": "{workspace_name}/saved-data.json"
+    }
+]

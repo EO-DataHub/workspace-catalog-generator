@@ -1,0 +1,7 @@
+{
+    "type": "Catalog",
+    "id": "{catalog_id",
+    "title": "{catalog_title}",
+    "description": "{catalog_description}",
+    "stac_version": "1.0.0"
+}

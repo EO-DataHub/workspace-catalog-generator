@@ -130,55 +130,67 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
-    test_catalog_file_name = f"{workspace_name}.json"
-    test_proc_results_file_name = f"{workspace_name}/processing-results.json"
 
-    test_catalog_json = {
-        "type": "Catalog",
-        "id": f"{workspace_name}",
-        "title": f"Catalog for workspace {workspace_name}",
-        "description": f"Datasets in the {workspace_name} workspace",
-        "stac_version": "1.0.0",
-    }
+    # Read expected catalogs config
+    with open("config/required-catalogs.json", "r") as file:
+        catalogs_to_generate = json.load(file)
 
-    test_catalog_json_str = json.dumps(test_catalog_json)
+    # Replace workspace name in the catalog dictionary
+    for catalog in catalogs_to_generate:
+        catalog["id"] = catalog["id"].replace("{workspace_name}", workspace_name)
+        catalog["title"] = catalog["title"].replace("{workspace_name}", workspace_name)
+        catalog["description"] = catalog["description"].replace("{workspace_name}", workspace_name)
+        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace(
+            "{workspace_name}", workspace_name
+        )
 
-    test_proc_results_json = {
-        "type": "Catalog",
-        "id": "processing-results",
-        "title": "Workflow Output Catalogs",
-        "description": f"Workflow outputs in the {workspace_name} workspace",
-        "stac_version": "1.0.0",
-    }
+    # Construct expected catalogs
+    with open("templates/catalog-template.json") as f:
+        catalog_dict = json.load(f)
 
-    test_proc_results_json_str = json.dumps(test_proc_results_json)
+    expected_catalogs = []
+    for catalog in catalogs_to_generate:
+        catalog_dict["id"] = catalog["id"]
+        catalog_dict["title"] = catalog["title"]
+        catalog_dict["description"] = catalog["description"]
+        expected_catalogs.append(json.dumps(catalog_dict))
 
     # Create a mock S3 client
     mock_boto_client = mock.Mock()
 
     created_keys = create_catalogs(mock_boto_client, workspace_name, bucket_name)
 
-    # Assert that the create_catalogs function was called twice
-    assert mock_boto_client.upload_fileobj.call_count == 2
+    # Assert that the create_catalogs function was called three times
+    assert mock_boto_client.upload_fileobj.call_count == 3
 
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
     # Compare arguments for first call
     first_call = calls[0]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert first_call.args[0].getvalue().decode("utf-8") == test_catalog_json_str
+    assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[0]
     assert first_call.args[1] == bucket_name
-    assert first_call.args[2] == test_catalog_file_name
+    print(catalogs_to_generate[0]["file_name_and_path"])
+    assert first_call.args[2] == catalogs_to_generate[0]["file_name_and_path"]
 
     # Compare arguments for second call
     second_call = calls[1]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert second_call.args[0].getvalue().decode("utf-8") == test_proc_results_json_str
+    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
     assert second_call.args[1] == bucket_name
-    assert second_call.args[2] == test_proc_results_file_name
+    print(catalogs_to_generate[1]["file_name_and_path"])
+    assert second_call.args[2] == catalogs_to_generate[1]["file_name_and_path"]
+
+    # Compare arguments for third call
+    third_call = calls[2]
+    # Need to decode the BytesIO object to compare with the original JSON string
+    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
+    assert third_call.args[1] == bucket_name
+    print(catalogs_to_generate[2]["file_name_and_path"])
+    assert third_call.args[2] == catalogs_to_generate[2]["file_name_and_path"]
 
     # Check final output is as expected
-    assert created_keys == [test_catalog_file_name, test_proc_results_file_name]
+    assert created_keys == [file["file_name_and_path"] for file in catalogs_to_generate]
 
 
 @mock.patch("boto3.client")
@@ -187,28 +199,49 @@ def test_delete_catalogs(mock_boto_client):
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
-    test_catalog_file_name = f"{workspace_name}.json"
-    test_proc_results_file_name = f"{workspace_name}/processing-results.json"
+
+    # Read expected catalogs
+    with open("config/required-catalogs.json", "r") as file:
+        catalogs_to_generate = json.load(file)
+
+    # Replace workspace name in the catalog dictionary
+    for catalog in catalogs_to_generate:
+        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace(
+            "{workspace_name}", workspace_name
+        )
 
     # Create a mock S3 client
     mock_boto_client = mock.Mock()
 
     deleted_keys = delete_catalogs(mock_boto_client, workspace_name, bucket_name)
 
-    # Assert that the delete_catalogs function was called twice
-    assert mock_boto_client.delete_object.call_count == 2
+    # Assert that the delete_catalogs function was called three times
+    assert mock_boto_client.delete_object.call_count == 3
 
     # Check arguments were as expected
     calls = mock_boto_client.delete_object.call_args_list
     # Compare arguments for first call
     first_call = calls[0]
-    assert first_call.kwargs == {"Bucket": bucket_name, "Key": test_catalog_file_name}
+    assert first_call.kwargs == {
+        "Bucket": bucket_name,
+        "Key": catalogs_to_generate[0]["file_name_and_path"],
+    }
 
     # Compare arguments for second call
     second_call = calls[1]
-    assert second_call.kwargs == {"Bucket": bucket_name, "Key": test_proc_results_file_name}
+    assert second_call.kwargs == {
+        "Bucket": bucket_name,
+        "Key": catalogs_to_generate[1]["file_name_and_path"],
+    }
 
-    assert deleted_keys == [test_catalog_file_name, test_proc_results_file_name]
+    # Compare arguments for third call
+    second_call = calls[2]
+    assert second_call.kwargs == {
+        "Bucket": bucket_name,
+        "Key": catalogs_to_generate[2]["file_name_and_path"],
+    }
+
+    assert deleted_keys == [file["file_name_and_path"] for file in catalogs_to_generate]
 
 
 @mock.patch("pulsar.Producer")

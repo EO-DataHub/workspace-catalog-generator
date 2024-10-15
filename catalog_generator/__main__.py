@@ -33,76 +33,84 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
+# Create new top-level catalog entry for workspace name
+with open("templates/catalog-template.json") as f:
+    catalog_dict = json.load(f)
+
+# Read list of expected catalogs
+with open("config/required-catalogs.json") as f:
+    catalogs_to_generate = json.load(f)
+
+
+def upload_file_to_s3(client: botocore.client, file_name: str, bucket: str, data: dict) -> bool:
+    """
+    Upload a file to an S3 bucket
+    """
+    try:
+        client.upload_fileobj(BytesIO(data.encode("utf-8")), bucket, file_name)
+        # Log the S3 upload details
+        logger.info(
+            f"Uploaded catalog '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+        )
+        return True
+    except Exception as e:
+        logger.error(
+            f"Failed to upload catalog '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+        )
+        logger.error(e)
+        return False
+
+
+def create_catalog(
+    client: botocore.client,
+    workspace_name: str,
+    bucket_name: str,
+    file_name_and_path: str,
+    id: str,
+    title: str,
+    description: str,
+) -> List[str]:
+    """
+    Create new catalog files in S3.
+    """
+    # Create a dictionary for the catalog
+    catalog_dict["id"] = id.replace("{workspace_name}", workspace_name)
+    catalog_dict["title"] = title.replace("{workspace_name}", workspace_name)
+    catalog_dict["description"] = description.replace("{workspace_name}", workspace_name)
+
+    # Generate a unique filename for the catalog
+    filename = file_name_and_path.replace("{workspace_name}", workspace_name)
+
+    # Convert the catalog dictionary to JSON string
+    catalog_json = json.dumps(catalog_dict)
+
+    # Upload the catalog JSON file to S3 bucket
+    file_uploaded = upload_file_to_s3(client, filename, bucket_name, catalog_json)
+
+    if file_uploaded:
+        return filename
+
 
 def create_catalogs(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
     """
     Create new catalog files in S3.
     """
-
-    created_keys = []
-
-    # Create new top-level catalog entry for workspace name
-    with open("templates/workspace-catalog-template.json") as f:
-        catalog_dict = json.load(f)
-
-    new_id = {"id": catalog_dict["id"].replace("{workspace_name}", workspace_name)}
-    new_title = {"title": catalog_dict["title"].replace("{workspace_name}", workspace_name)}
-    new_description = {
-        "description": catalog_dict["description"].replace("{workspace_name}", workspace_name)
-    }
-    catalog_dict.update(new_id)
-    catalog_dict.update(new_title)
-    catalog_dict.update(new_description)
-
-    # Generate a unique filename for the catalog
-    filename = f"{workspace_name}.json"
-
-    # Convert the catalog dictionary to JSON string
-    catalog_json = json.dumps(catalog_dict)
-
-    # Upload the catalog JSON file to S3 bucket
-    try:
-        client.upload_fileobj(BytesIO(catalog_json.encode("utf-8")), bucket_name, filename)
-        # Log the S3 upload details
-        logger.info(
-            f"Uploaded catalog '{filename}' to S3 bucket '{bucket_name}' with key '{filename}'"
+    created_files = []
+    for file_to_create in catalogs_to_generate:
+        uploaded_filename = create_catalog(
+            client,
+            workspace_name,
+            bucket_name,
+            file_to_create["file_name_and_path"],
+            file_to_create["id"],
+            file_to_create["title"],
+            file_to_create["description"],
         )
-        created_keys.append(filename)
-    except Exception as e:
-        logger.error(
-            f"Failed to upload catalog '{filename}' to S3 bucket '{bucket_name}' with key '{filename}'"
-        )
-        logger.error(e)
 
-    # Create new top-level catalog entry for workspace name
-    with open("templates/processing-results-catalog-template.json") as f:
-        catalog_dict = json.load(f)
+        if uploaded_filename:
+            created_files.append(uploaded_filename)
 
-    new_description = {
-        "description": catalog_dict["description"].replace("{workspace_name}", workspace_name)
-    }
-    catalog_dict.update(new_description)
-
-    # Generate a unique filename for the catalog
-    filename = f"{workspace_name}/processing-results.json"
-
-    # Convert the catalog dictionary to JSON string
-    catalog_json = json.dumps(catalog_dict)
-
-    # Upload the catalog JSON file to S3 bucket
-    try:
-        client.upload_fileobj(BytesIO(catalog_json.encode("utf-8")), bucket_name, filename)
-        # Log the S3 upload details
-        logger.info(
-            f"Uploaded catalog '{filename}' to S3 bucket '{bucket_name}' with key '{filename}'"
-        )
-        created_keys.append(filename)
-    except Exception as e:
-        logger.error(
-            f"Failed to upload catalog '{filename}' to S3 bucket '{bucket_name}' with key '{filename}'"
-        )
-        logger.error(e)
-    return created_keys
+    return created_files
 
 
 def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
@@ -110,7 +118,10 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     Delete catalog files in S3.
     """
     deleted_keys = []
-    files_to_delete = [f"{workspace_name}.json", f"{workspace_name}/processing-results.json"]
+    files_to_delete = [
+        file["file_name_and_path"].replace("{workspace_name}", workspace_name)
+        for file in catalogs_to_generate
+    ]
 
     for key in files_to_delete:
         try:
