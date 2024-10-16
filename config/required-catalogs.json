@@ -6,13 +6,13 @@
         "file_name_and_path": "{workspace_name}.json"
     },
     {
-        "id": "{workspace_name}/processing-results",
+        "id": "processing-results",
         "title": "{workspace_name} Processing Results",
         "description": "Catalog for {workspace_name} processing results",
         "file_name_and_path": "{workspace_name}/processing-results.json"
     },
     {
-        "id": "{workspace_name}/saved-data",
+        "id": "saved-data",
         "title": "{workspace_name} Saved Data",
         "description": "Catalog for {workspace_name} saved data",
         "file_name_and_path": "{workspace_name}/saved-data.json"
