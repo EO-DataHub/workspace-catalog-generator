@@ -33,7 +33,7 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
-# Create new top-level catalog entry for workspace name
+# Load catalog template
 with open("templates/catalog-template.json") as f:
     catalog_dict = json.load(f)
 
