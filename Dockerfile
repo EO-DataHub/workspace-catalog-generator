@@ -11,9 +11,10 @@ COPY requirements.txt /app
 
 COPY templates/ /app/templates
 
+COPY config/ /app/config
+
 RUN --mount=type=cache,target=/root/.cache/pip python -m pip install -r requirements.txt
 
 COPY /catalog_generator /app/catalog_generator
-
 
 CMD ["python", "-m", "catalog_generator"]

@@ -1,7 +1,0 @@
-{
-    "type": "Catalog",
-    "id": "processing-results",
-    "title": "Workflow Output Catalogs",
-    "description": "Workflow outputs in the {workspace_name} workspace",
-    "stac_version": "1.0.0"
-}
