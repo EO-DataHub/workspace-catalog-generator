@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.2 (13-11-2024)
+- Reformatting to support easier addition of catalogs
+- Adding saved-data catalog
+
 ## v0.1.1 (09-07-2024)
 
 - Adding unit tests
