@@ -160,8 +160,8 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
 
     created_keys = create_catalogs(mock_boto_client, workspace_name, bucket_name)
 
-    # Assert that the create_catalogs function was called three times
-    assert mock_boto_client.upload_fileobj.call_count == 3
+    # Assert that the create_catalogs function was called for each catalog in the config
+    assert mock_boto_client.upload_fileobj.call_count == len(catalogs_to_generate)
 
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
@@ -215,8 +215,8 @@ def test_delete_catalogs(mock_boto_client):
 
     deleted_keys = delete_catalogs(mock_boto_client, workspace_name, bucket_name)
 
-    # Assert that the delete_catalogs function was called three times
-    assert mock_boto_client.delete_object.call_count == 3
+    # Assert that the delete_catalogs function was called for each catalog in the config
+    assert mock_boto_client.delete_object.call_count == len(catalogs_to_generate)
 
     # Check arguments were as expected
     calls = mock_boto_client.delete_object.call_args_list
