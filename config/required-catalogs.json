@@ -16,5 +16,11 @@
         "title": "{workspace_name} Saved Data",
         "description": "Catalog for {workspace_name} saved data",
         "file_name_and_path": "{workspace_name}/saved-data.json"
+    },
+    {
+        "id": "commercial-data",
+        "title": "{workspace_name} Commercial Data",
+        "description": "Catalog for {workspace_name} commercial data",
+        "file_name_and_path": "{workspace_name}/commercial-data.json"
     }
 ]
