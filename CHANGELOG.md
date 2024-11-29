@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.1.3 (29-11-2024)
+- Adding commercial-data catalog
+- Adjusting unit tests to scale with input catalogs
+
 ## v0.1.2 (13-11-2024)
 - Reformatting to support easier addition of catalogs
 - Adding saved-data catalog
