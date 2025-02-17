@@ -80,15 +80,20 @@ def create_catalog(
 
     # Generate a unique filename for the catalog
     filename = file_name_and_path.replace("{workspace_name}", workspace_name)
+    harvested_filename = "harvested/" + filename
 
     # Convert the catalog dictionary to JSON string
     catalog_json = json.dumps(catalog_dict)
 
     # Upload the catalog JSON file to S3 bucket
     file_uploaded = upload_file_to_s3(client, filename, bucket_name, catalog_json)
-
+    # Upload second file to harvested source
     if file_uploaded:
-        return filename
+        harvested_file_uploaded = upload_file_to_s3(
+            client, harvested_filename, bucket_name, catalog_json
+        )
+        if harvested_file_uploaded:
+            return harvested_filename
 
 
 def create_catalogs(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
