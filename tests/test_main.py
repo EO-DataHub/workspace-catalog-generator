@@ -154,6 +154,8 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
         catalog_dict["title"] = catalog["title"]
         catalog_dict["description"] = catalog["description"]
         expected_catalogs.append(json.dumps(catalog_dict))
+        # Add again for harvested upload
+        expected_catalogs.append(json.dumps(catalog_dict))
 
     # Create a mock S3 client
     mock_boto_client = mock.Mock()
@@ -161,7 +163,7 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     created_keys = create_catalogs(mock_boto_client, workspace_name, bucket_name)
 
     # Assert that the create_catalogs function was called for each catalog in the config
-    assert mock_boto_client.upload_fileobj.call_count == len(catalogs_to_generate)
+    assert mock_boto_client.upload_fileobj.call_count == len(catalogs_to_generate) * 2
 
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
@@ -173,24 +175,52 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     print(catalogs_to_generate[0]["file_name_and_path"])
     assert first_call.args[2] == catalogs_to_generate[0]["file_name_and_path"]
 
-    # Compare arguments for second call
-    second_call = calls[1]
+    # Check arguments were as expected
+    calls = mock_boto_client.upload_fileobj.call_args_list
+    # Compare arguments for first call
+    first_call = calls[1]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
+    assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
+    assert first_call.args[1] == bucket_name
+    print(catalogs_to_generate[0]["file_name_and_path"])
+    assert first_call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"]
+
+    # Compare arguments for second call
+    second_call = calls[2]
+    # Need to decode the BytesIO object to compare with the original JSON string
+    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
     assert second_call.args[1] == bucket_name
     print(catalogs_to_generate[1]["file_name_and_path"])
     assert second_call.args[2] == catalogs_to_generate[1]["file_name_and_path"]
 
-    # Compare arguments for third call
-    third_call = calls[2]
+    # Compare arguments for second call
+    second_call = calls[3]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
+    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[3]
+    assert second_call.args[1] == bucket_name
+    print(catalogs_to_generate[1]["file_name_and_path"])
+    assert second_call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"]
+
+    # Compare arguments for third call
+    third_call = calls[4]
+    # Need to decode the BytesIO object to compare with the original JSON string
+    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[4]
     assert third_call.args[1] == bucket_name
     print(catalogs_to_generate[2]["file_name_and_path"])
     assert third_call.args[2] == catalogs_to_generate[2]["file_name_and_path"]
 
+    # Compare arguments for third call
+    third_call = calls[5]
+    # Need to decode the BytesIO object to compare with the original JSON string
+    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[5]
+    assert third_call.args[1] == bucket_name
+    print(catalogs_to_generate[2]["file_name_and_path"])
+    assert third_call.args[2] == "harvested/" + catalogs_to_generate[2]["file_name_and_path"]
+
     # Check final output is as expected
-    assert created_keys == [file["file_name_and_path"] for file in catalogs_to_generate]
+    assert created_keys == [
+        "harvested/" + file["file_name_and_path"] for file in catalogs_to_generate
+    ]
 
 
 @mock.patch("boto3.client")
