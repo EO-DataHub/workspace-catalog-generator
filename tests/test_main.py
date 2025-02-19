@@ -167,7 +167,7 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
 
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
-    # Compare arguments for first call
+    # Compare arguments for first catalog first call
     first_call = calls[0]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[0]
@@ -176,35 +176,35 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
 
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
-    # Compare arguments for first call
+    # Compare arguments for first catalog second call
     first_call = calls[1]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
     assert first_call.args[1] == bucket_name
     assert first_call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"]
 
-    # Compare arguments for second call
+    # Compare arguments for second catalog first call
     second_call = calls[2]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
     assert second_call.args[1] == bucket_name
     assert second_call.args[2] == catalogs_to_generate[1]["file_name_and_path"]
 
-    # Compare arguments for second call
+    # Compare arguments for second catalog second call
     second_call = calls[3]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[3]
     assert second_call.args[1] == bucket_name
     assert second_call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"]
 
-    # Compare arguments for third call
+    # Compare arguments for third catalog first call
     third_call = calls[4]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[4]
     assert third_call.args[1] == bucket_name
     assert third_call.args[2] == catalogs_to_generate[2]["file_name_and_path"]
 
-    # Compare arguments for third call
+    # Compare arguments for third catalog second call
     third_call = calls[5]
     # Need to decode the BytesIO object to compare with the original JSON string
     assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[5]
