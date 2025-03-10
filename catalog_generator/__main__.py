@@ -33,6 +33,9 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
+# Set Top-Level User Catalogue Name
+USER_CATALOG_NAME = os.getenv("USER_CATALOG_NAME", "user")
+
 # Load catalog template
 with open("templates/catalog-template.json") as f:
     catalog_dict = json.load(f)
@@ -208,7 +211,7 @@ def generate_output_message(
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"user-datasets/{workspace_name}",
+        "target": f"{USER_CATALOG_NAME}/{workspace_name}",
     }
 
     return output_msg
