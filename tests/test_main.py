@@ -19,15 +19,14 @@ def test_generate_output_message(mock_send_pulsar_message):
     deleted_keys = []
 
     test_msg = {
-        "id": "workspaces/transform-new-workspace",
+        "id": f"{workspace_name}-workspace-generator",
         "workspace": workspace_name,
-        "branch": "",
         "bucket_name": bucket_name,
         "updated_keys": [],
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"user/{workspace_name}",
+        "target": f"catalogs/user/catalogs/{workspace_name}",
     }
 
     output_msg = generate_output_message(workspace_name, bucket_name, created_keys, deleted_keys)
@@ -168,52 +167,57 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     # Check arguments were as expected
     calls = mock_boto_client.upload_fileobj.call_args_list
     # Compare arguments for first catalog first call
-    first_call = calls[0]
+    call = calls[0]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[0]
-    assert first_call.args[1] == bucket_name
-    assert first_call.args[2] == catalogs_to_generate[0]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[0]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == catalogs_to_generate[0]["file_name_and_path"]
 
-    # Check arguments were as expected
-    calls = mock_boto_client.upload_fileobj.call_args_list
     # Compare arguments for first catalog second call
-    first_call = calls[1]
+    call = calls[1]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert first_call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
-    assert first_call.args[1] == bucket_name
-    assert first_call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"].replace(
+        "/", "/catalogs/"
+    )
 
     # Compare arguments for second catalog first call
-    second_call = calls[2]
+    call = calls[2]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
-    assert second_call.args[1] == bucket_name
-    assert second_call.args[2] == catalogs_to_generate[1]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[2]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == catalogs_to_generate[1]["file_name_and_path"]
 
     # Compare arguments for second catalog second call
-    second_call = calls[3]
+    call = calls[3]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert second_call.args[0].getvalue().decode("utf-8") == expected_catalogs[3]
-    assert second_call.args[1] == bucket_name
-    assert second_call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[3]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"].replace(
+        "/", "/catalogs/"
+    )
 
     # Compare arguments for third catalog first call
-    third_call = calls[4]
+    call = calls[4]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[4]
-    assert third_call.args[1] == bucket_name
-    assert third_call.args[2] == catalogs_to_generate[2]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[4]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == catalogs_to_generate[2]["file_name_and_path"]
 
     # Compare arguments for third catalog second call
-    third_call = calls[5]
+    call = calls[5]
     # Need to decode the BytesIO object to compare with the original JSON string
-    assert third_call.args[0].getvalue().decode("utf-8") == expected_catalogs[5]
-    assert third_call.args[1] == bucket_name
-    assert third_call.args[2] == "harvested/" + catalogs_to_generate[2]["file_name_and_path"]
+    assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[5]
+    assert call.args[1] == bucket_name
+    assert call.args[2] == "harvested/" + catalogs_to_generate[2]["file_name_and_path"].replace(
+        "/", "/catalogs/"
+    )
 
     # Check final output is as expected
     assert created_keys == [
-        "harvested/" + file["file_name_and_path"] for file in catalogs_to_generate
+        "harvested/" + file["file_name_and_path"].replace("/", "/catalogs/")
+        for file in catalogs_to_generate
     ]
 
 
@@ -279,7 +283,7 @@ def test_send_pulsar_message(mock_pulsar_producer):
 
     # Generate test output message
     test_msg = {
-        "id": "workspaces/transform-new-workspace",
+        "id": f"{workspace_name}-workspace-generator",
         "workspace": workspace_name,
         "branch": "",
         "bucket_name": bucket_name,
@@ -287,7 +291,7 @@ def test_send_pulsar_message(mock_pulsar_producer):
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"user/{workspace_name}",
+        "target": f"catalogs/user/catalogs/{workspace_name}",
     }
 
     test_msg_str_enc = json.dumps(test_msg).encode("utf-8")
