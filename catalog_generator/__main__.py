@@ -83,7 +83,7 @@ def create_catalog(
 
     # Generate a unique filename for the catalog
     filename = file_name_and_path.replace("{workspace_name}", workspace_name)
-    harvested_filename = "harvested/" + filename
+    harvested_filename = "harvested/" + filename.replace("/", "/catalogs/")
 
     # Convert the catalog dictionary to JSON string
     catalog_json = json.dumps(catalog_dict)
@@ -203,15 +203,14 @@ def generate_output_message(
     """
     # Generate output message for altered files
     output_msg = {
-        "id": "workspaces/transform-new-workspace",
+        "id": f"{workspace_name}-workspace-generator",
         "workspace": workspace_name,
-        "branch": "",
         "bucket_name": bucket_name,
         "updated_keys": [],
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"{USER_CATALOG_NAME}/{workspace_name}",
+        "target": f"catalogs/{USER_CATALOG_NAME}/catalogs/{workspace_name}",
     }
 
     return output_msg
