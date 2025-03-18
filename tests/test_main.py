@@ -27,7 +27,7 @@ def test_generate_output_message(mock_send_pulsar_message):
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"user-datasets/{workspace_name}",
+        "target": f"user/{workspace_name}",
     }
 
     output_msg = generate_output_message(workspace_name, bucket_name, created_keys, deleted_keys)
@@ -287,7 +287,7 @@ def test_send_pulsar_message(mock_pulsar_producer):
         "added_keys": created_keys,
         "deleted_keys": deleted_keys,
         "source": workspace_name,
-        "target": f"user-datasets/{workspace_name}",
+        "target": f"user/{workspace_name}",
     }
 
     test_msg_str_enc = json.dumps(test_msg).encode("utf-8")
