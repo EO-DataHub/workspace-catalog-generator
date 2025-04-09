@@ -40,9 +40,11 @@ USER_CATALOG_NAME = os.getenv("USER_CATALOG_NAME", "user")
 with open("templates/catalog-template.json") as f:
     catalog_dict = json.load(f)
 
-# Read list of expected catalogs
-with open("config/required-catalogs.json") as f:
-    catalogs_to_generate = json.load(f)
+# Read list of expected catalogs and files
+with open("config/required-files.json") as f:
+    config_json = json.load(f)
+    catalogs_to_generate = config_json["catalogs"]
+    files_to_generate = config_json["files"]
 
 
 def upload_file_to_s3(client: botocore.client, file_name: str, bucket: str, data: dict) -> bool:
@@ -142,6 +144,39 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     return deleted_keys
 
 
+def create_files(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+    """
+    Create new files in S3.
+    """
+    # Create additional files in workspace object store
+    # This does not need to be harvested
+    for file_to_create in files_to_generate:
+        filename = file_to_create["file_name_and_path"].replace("{workspace_name}", workspace_name)
+        file_template_path = file_to_create["template"]
+        with open(file_template_path) as f:
+            file_template = f.read()
+        upload_file_to_s3(client, filename, bucket_name, file_template)
+
+
+def delete_files(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+    """
+    Delete files in S3.
+    """
+    # Delete additional files in workspace object store
+    # This does not need to be harvested
+    files_to_delete = [
+        file["file_name_and_path"].replace("{workspace_name}", workspace_name)
+        for file in files_to_generate
+    ]
+    for key in files_to_delete:
+        try:
+            client.delete_object(Bucket=bucket_name, Key=key)
+            logger.info(f"Deleted file '{key}' from S3 bucket '{bucket_name}'")
+        except Exception as e:
+            logger.error(f"Failed to delete file '{key}' from S3 bucket '{bucket_name}'")
+            logger.error(e)
+
+
 def get_s3_client() -> boto3.client:
     """Generate boto3 client ready for S3 data access"""
     if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
@@ -179,10 +214,12 @@ def interpret_message(msg: str) -> tuple:
         # This covers workspace creation and updates
         logger.info(f"Updating catalogs for the {workspace_name} workspace.")
         created_keys = create_catalogs(client, workspace_name, bucket_name)
+        create_files(client, workspace_name, bucket_name)
     elif workspace_status == "delete":
         # This covers workspace deletion
         logger.info(f"Removing catalogs for the {workspace_name} workspace.")
         deleted_keys = delete_catalogs(client, workspace_name, bucket_name)
+        delete_files(client, workspace_name, bucket_name)
 
     return workspace_name, bucket_name, created_keys, deleted_keys
 
