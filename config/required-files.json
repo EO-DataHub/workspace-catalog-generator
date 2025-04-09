@@ -1,0 +1,34 @@
+{
+    "catalogs": [
+        {
+            "id": "{workspace_name}",
+            "title": "{workspace_name} Workspace Catalog",
+            "description": "Catalog for {workspace_name} workspace",
+            "file_name_and_path": "{workspace_name}.json"
+        },
+        {
+            "id": "processing-results",
+            "title": "{workspace_name} Processing Results",
+            "description": "Catalog for {workspace_name} processing results",
+            "file_name_and_path": "{workspace_name}/processing-results.json"
+        },
+        {
+            "id": "saved-data",
+            "title": "{workspace_name} Saved Data",
+            "description": "Catalog for {workspace_name} saved data",
+            "file_name_and_path": "{workspace_name}/saved-data.json"
+        },
+        {
+            "id": "commercial-data",
+            "title": "{workspace_name} Commercial Data",
+            "description": "Catalog for {workspace_name} commercial data",
+            "file_name_and_path": "{workspace_name}/commercial-data.json"
+        }
+    ],
+    "files": [
+        {
+            "file_name_and_path": "{workspace_name}/public/README.md",
+            "template": "templates/public-readme.md"
+        }
+    ]
+}
