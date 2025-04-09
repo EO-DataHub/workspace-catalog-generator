@@ -10,6 +10,7 @@ from catalog_generator.__main__ import (
     generate_output_message,
     interpret_message,
     send_pulsar_message,
+    upload_file_to_s3,
 )
 
 
@@ -374,3 +375,47 @@ def test_delete_files(mock_boto_client, mock_bytes_io):
     call = calls[0]
     assert call[1]["Key"] == files_to_generate[0]["file_name_and_path"]
     assert call[1]["Bucket"] == bucket_name
+
+
+@patch("catalog_generator.__main__.logger")
+@patch("catalog_generator.__main__.boto3.client")
+def test_upload_file_to_s3_success(mock_boto_client, mock_logger):
+    # Arrange
+    mock_client = mock_boto_client.return_value
+    mock_client.upload_fileobj.return_value = None
+    file_name = "test_file.json"
+    bucket = "test_bucket"
+    data = '{"key": "value"}'
+    file_type = "file"
+
+    # Act
+    result = upload_file_to_s3(mock_client, file_name, bucket, data, file_type)
+
+    # Assert
+    mock_client.upload_fileobj.assert_called_once()
+    mock_logger.info.assert_any_call(
+        f"Uploaded {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+    )
+    assert result
+
+
+@patch("catalog_generator.__main__.logger")
+@patch("catalog_generator.__main__.boto3.client")
+def test_upload_file_to_s3_boto3_failure(mock_boto_client, mock_logger):
+    # Arrange
+    mock_client = mock_boto_client.return_value
+    mock_client.upload_fileobj.side_effect = Exception("Boto3 upload failed")
+    file_name = "test_file.json"
+    bucket = "test_bucket"
+    data = '{"key": "value"}'
+    file_type = "file"
+
+    # Act
+    result = upload_file_to_s3(mock_client, file_name, bucket, data, file_type)
+
+    # Assert
+    mock_client.upload_fileobj.assert_called_once()
+    mock_logger.error.assert_any_call(
+        f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+    )
+    assert not result
