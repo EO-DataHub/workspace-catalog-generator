@@ -47,7 +47,9 @@ with open("config/required-files.json") as f:
     files_to_generate = config_json["files"]
 
 
-def upload_file_to_s3(client: botocore.client, file_name: str, bucket: str, data: dict) -> bool:
+def upload_file_to_s3(
+    client: botocore.client, file_name: str, bucket: str, data: dict, file_type: str = "file"
+) -> bool:
     """
     Upload a file to an S3 bucket
     """
@@ -55,12 +57,12 @@ def upload_file_to_s3(client: botocore.client, file_name: str, bucket: str, data
         client.upload_fileobj(BytesIO(data.encode("utf-8")), bucket, file_name)
         # Log the S3 upload details
         logger.info(
-            f"Uploaded catalog '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+            f"Uploaded {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
         )
         return True
     except Exception as e:
         logger.error(
-            f"Failed to upload catalog '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+            f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
         )
         logger.error(e)
         return False
@@ -91,11 +93,11 @@ def create_catalog(
     catalog_json = json.dumps(catalog_dict)
 
     # Upload the catalog JSON file to S3 bucket
-    file_uploaded = upload_file_to_s3(client, filename, bucket_name, catalog_json)
+    file_uploaded = upload_file_to_s3(client, filename, bucket_name, catalog_json, "catalog")
     # Upload second file to harvested source
     if file_uploaded:
         harvested_file_uploaded = upload_file_to_s3(
-            client, harvested_filename, bucket_name, catalog_json
+            client, harvested_filename, bucket_name, catalog_json, "catalog"
         )
         if harvested_file_uploaded:
             return harvested_filename
@@ -155,7 +157,7 @@ def create_files(client: botocore.client, workspace_name: str, bucket_name: str)
         file_template_path = file_to_create["template"]
         with open(file_template_path) as f:
             file_template = f.read()
-        upload_file_to_s3(client, filename, bucket_name, file_template)
+        upload_file_to_s3(client, filename, bucket_name, file_template, "file")
 
 
 def delete_files(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
