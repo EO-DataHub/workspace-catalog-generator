@@ -4,10 +4,13 @@ from unittest.mock import patch
 
 from catalog_generator.__main__ import (
     create_catalogs,
+    create_files,
     delete_catalogs,
+    delete_files,
     generate_output_message,
     interpret_message,
     send_pulsar_message,
+    upload_file_to_s3,
 )
 
 
@@ -131,8 +134,8 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     bucket_name = "test-bucket"
 
     # Read expected catalogs config
-    with open("config/required-catalogs.json", "r") as file:
-        catalogs_to_generate = json.load(file)
+    with open("config/required-files.json", "r") as file:
+        catalogs_to_generate = json.load(file)["catalogs"]
 
     # Replace workspace name in the catalog dictionary
     for catalog in catalogs_to_generate:
@@ -229,8 +232,8 @@ def test_delete_catalogs(mock_boto_client):
     bucket_name = "test-bucket"
 
     # Read expected catalogs
-    with open("config/required-catalogs.json", "r") as file:
-        catalogs_to_generate = json.load(file)
+    with open("config/required-files.json", "r") as file:
+        catalogs_to_generate = json.load(file)["catalogs"]
 
     # Replace workspace name in the catalog dictionary
     for catalog in catalogs_to_generate:
@@ -303,3 +306,116 @@ def test_send_pulsar_message(mock_pulsar_producer):
 
     # Check that the producer send method was called with the expected argument
     mock_pulsar_producer.send.assert_called_once_with(test_msg_str_enc)
+
+
+@mock.patch("io.BytesIO")
+@mock.patch("boto3.client")
+def test_create_files(mock_boto_client, mock_bytes_io):
+
+    # Set test variables
+    workspace_name = "test-ws"
+    bucket_name = "test-bucket"
+
+    # Read expected catalogs config
+    with open("config/required-files.json", "r") as file:
+        files_to_generate = json.load(file)["files"]
+
+    # Replace workspace name in the catalog dictionary
+    for file in files_to_generate:
+        file["file_name_and_path"] = file["file_name_and_path"].replace(
+            "{workspace_name}", workspace_name
+        )
+
+    # Construct expected catalogs
+    with open("templates/public-readme.md") as f:
+        file_template = f.read()
+
+    # Create a mock S3 client
+    mock_boto_client = mock.Mock()
+
+    create_files(mock_boto_client, workspace_name, bucket_name)
+
+    # Check arguments were as expected
+    calls = mock_boto_client.upload_fileobj.call_args_list
+
+    # Compare arguments for first call
+    call = calls[0]
+    assert call.args[0].getvalue().decode("utf-8") == file_template
+    assert call.args[1] == bucket_name
+    assert call.args[2] == files_to_generate[0]["file_name_and_path"]
+
+
+@mock.patch("io.BytesIO")
+@mock.patch("boto3.client")
+def test_delete_files(mock_boto_client, mock_bytes_io):
+
+    # Set test variables
+    workspace_name = "test-ws"
+    bucket_name = "test-bucket"
+
+    # Read expected catalogs config
+    with open("config/required-files.json", "r") as file:
+        files_to_generate = json.load(file)["files"]
+
+    # Replace workspace name in the catalog dictionary
+    for file in files_to_generate:
+        file["file_name_and_path"] = file["file_name_and_path"].replace(
+            "{workspace_name}", workspace_name
+        )
+
+    # Create a mock S3 client
+    mock_boto_client = mock.Mock()
+
+    delete_files(mock_boto_client, workspace_name, bucket_name)
+
+    # Check arguments were as expected
+    calls = mock_boto_client.delete_object.call_args_list
+
+    # Compare arguments for first call
+    call = calls[0]
+    assert call[1]["Key"] == files_to_generate[0]["file_name_and_path"]
+    assert call[1]["Bucket"] == bucket_name
+
+
+@patch("catalog_generator.__main__.logger")
+@patch("catalog_generator.__main__.boto3.client")
+def test_upload_file_to_s3_success(mock_boto_client, mock_logger):
+    # Arrange
+    mock_client = mock_boto_client.return_value
+    mock_client.upload_fileobj.return_value = None
+    file_name = "test_file.json"
+    bucket = "test_bucket"
+    data = '{"key": "value"}'
+    file_type = "file"
+
+    # Act
+    result = upload_file_to_s3(mock_client, file_name, bucket, data, file_type)
+
+    # Assert
+    mock_client.upload_fileobj.assert_called_once()
+    mock_logger.info.assert_any_call(
+        f"Uploaded {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+    )
+    assert result
+
+
+@patch("catalog_generator.__main__.logger")
+@patch("catalog_generator.__main__.boto3.client")
+def test_upload_file_to_s3_boto3_failure(mock_boto_client, mock_logger):
+    # Arrange
+    mock_client = mock_boto_client.return_value
+    mock_client.upload_fileobj.side_effect = Exception("Boto3 upload failed")
+    file_name = "test_file.json"
+    bucket = "test_bucket"
+    data = '{"key": "value"}'
+    file_type = "file"
+
+    # Act
+    result = upload_file_to_s3(mock_client, file_name, bucket, data, file_type)
+
+    # Assert
+    mock_client.upload_fileobj.assert_called_once()
+    mock_logger.error.assert_any_call(
+        f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
+    )
+    assert not result
