@@ -80,6 +80,24 @@ def create_catalog(
     """
     Create new catalog files in S3.
     """
+
+    missing_key = False
+
+    if not file_name_and_path:
+        logger.error(f"No file name provided in the configuration for {file_name_and_path}")
+        missing_key = True
+    if not id:
+        logger.error(f"No id provided in the configuration for {id}")
+        missing_key = True
+    if not title:
+        logger.error(f"No title provided in the configuration for {title}")
+        missing_key = True
+    if not description:
+        logger.error(f"No description provided in the configuration for {description}")
+        missing_key = True
+    if missing_key:
+        return
+
     # Create a dictionary for the catalog
     catalog_dict["id"] = id.replace("{workspace_name}", workspace_name)
     catalog_dict["title"] = title.replace("{workspace_name}", workspace_name)
@@ -133,6 +151,7 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     files_to_delete = [
         file["file_name_and_path"].replace("{workspace_name}", workspace_name)
         for file in catalogs_to_generate
+        if "file_name_and_path" in file
     ]
 
     for key in files_to_delete:
@@ -153,8 +172,14 @@ def create_files(client: botocore.client, workspace_name: str, bucket_name: str)
     # Create additional files in workspace object store
     # This does not need to be harvested
     for file_to_create in files_to_generate:
-        filename = file_to_create["file_name_and_path"].replace("{workspace_name}", workspace_name)
-        file_template_path = file_to_create["template"]
+        filename = file_to_create.get("file_name_and_path")
+        if not filename:
+            logger.error(
+                f"No key: 'file_name_and_path' provided in the configuration for {file_to_create}"
+            )
+            continue
+        filename = filename.replace("{workspace_name}", workspace_name)
+        file_template_path = file_to_create.get("template", "SOME EXAMPLE TEXT")
         with open(file_template_path) as f:
             file_template = f.read()
         upload_file_to_s3(client, filename, bucket_name, file_template, "file")
@@ -169,6 +194,7 @@ def delete_files(client: botocore.client, workspace_name: str, bucket_name: str)
     files_to_delete = [
         file["file_name_and_path"].replace("{workspace_name}", workspace_name)
         for file in files_to_generate
+        if "file_name_and_path" in file
     ]
     for key in files_to_delete:
         try:
