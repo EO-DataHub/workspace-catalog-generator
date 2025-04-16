@@ -146,7 +146,7 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     return deleted_keys
 
 
-def create_files(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+def create_files(client: botocore.client, workspace_name: str, bucket_name: str):
     """
     Create new files in S3.
     """
@@ -160,7 +160,7 @@ def create_files(client: botocore.client, workspace_name: str, bucket_name: str)
         upload_file_to_s3(client, filename, bucket_name, file_template, "file")
 
 
-def delete_files(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+def delete_files(client: botocore.client, workspace_name: str, bucket_name: str):
     """
     Delete files in S3.
     """
