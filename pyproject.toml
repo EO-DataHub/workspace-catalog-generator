@@ -14,7 +14,7 @@
 
 [project]
 name = "workspace-catalog-generator"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Generator to create and delete catalog files in S3 upon workspace create/delete."
 readme = "README.md"
 
@@ -111,6 +111,9 @@ markers = [
 
 [tool.setuptools]
 packages = []
+
+[tool.setuptools-git-versioning]
+enabled = true
 
 [tool.black]
 line-length = 100
