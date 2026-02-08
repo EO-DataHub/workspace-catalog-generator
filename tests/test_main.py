@@ -1,6 +1,6 @@
 import json
 from unittest import mock
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from catalog_generator.__main__ import (
     create_catalogs,
@@ -15,11 +15,11 @@ from catalog_generator.__main__ import (
 
 
 @patch("catalog_generator.__main__.send_pulsar_message")
-def test_generate_output_message(mock_send_pulsar_message):
+def test_generate_output_message(mock_send_pulsar_message: MagicMock) -> None:
     workspace_name = "test_ws"
     bucket_name = "test-bucket"
     created_keys = ["test-datasets/test-catalog/test-collection.json"]
-    deleted_keys = []
+    deleted_keys: list[str] = []
 
     test_msg = {
         "id": f"{workspace_name}-workspace-generator",
@@ -42,9 +42,11 @@ def test_generate_output_message(mock_send_pulsar_message):
 @patch("catalog_generator.__main__.create_catalogs")
 @patch("catalog_generator.__main__.get_s3_client")
 def test_interpret_message_update(
-    mock_get_s3_client, mock_create_catalogs, mock_delete_catalogs, mock_boto_client
-):
-
+    mock_get_s3_client: MagicMock,
+    mock_create_catalogs: MagicMock,
+    mock_delete_catalogs: MagicMock,
+    mock_boto_client: MagicMock,
+) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
@@ -86,9 +88,11 @@ def test_interpret_message_update(
 @patch("catalog_generator.__main__.create_catalogs")
 @patch("catalog_generator.__main__.get_s3_client")
 def test_interpret_message_delete(
-    mock_get_s3_client, mock_create_catalogs, mock_delete_catalogs, mock_boto_client
-):
-
+    mock_get_s3_client: MagicMock,
+    mock_create_catalogs: MagicMock,
+    mock_delete_catalogs: MagicMock,
+    mock_boto_client: MagicMock,
+) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
@@ -127,14 +131,13 @@ def test_interpret_message_delete(
 
 @mock.patch("io.BytesIO")
 @mock.patch("boto3.client")
-def test_create_catalogs(mock_boto_client, mock_bytes_io):
-
+def test_create_catalogs(mock_boto_client: MagicMock, mock_bytes_io: MagicMock) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
 
     # Read expected catalogs config
-    with open("config/required-files.json", "r") as file:
+    with open("config/required-files.json") as file:
         catalogs_to_generate = json.load(file)["catalogs"]
 
     # Replace workspace name in the catalog dictionary
@@ -142,9 +145,7 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
         catalog["id"] = catalog["id"].replace("{workspace_name}", workspace_name)
         catalog["title"] = catalog["title"].replace("{workspace_name}", workspace_name)
         catalog["description"] = catalog["description"].replace("{workspace_name}", workspace_name)
-        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace(
-            "{workspace_name}", workspace_name
-        )
+        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace("{workspace_name}", workspace_name)
 
     # Construct expected catalogs
     with open("templates/catalog-template.json") as f:
@@ -181,9 +182,7 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     # Need to decode the BytesIO object to compare with the original JSON string
     assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[1]
     assert call.args[1] == bucket_name
-    assert call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"].replace(
-        "/", "/catalogs/"
-    )
+    assert call.args[2] == "harvested/" + catalogs_to_generate[0]["file_name_and_path"].replace("/", "/catalogs/")
 
     # Compare arguments for second catalog first call
     call = calls[2]
@@ -197,9 +196,7 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     # Need to decode the BytesIO object to compare with the original JSON string
     assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[3]
     assert call.args[1] == bucket_name
-    assert call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"].replace(
-        "/", "/catalogs/"
-    )
+    assert call.args[2] == "harvested/" + catalogs_to_generate[1]["file_name_and_path"].replace("/", "/catalogs/")
 
     # Compare arguments for third catalog first call
     call = calls[4]
@@ -213,33 +210,27 @@ def test_create_catalogs(mock_boto_client, mock_bytes_io):
     # Need to decode the BytesIO object to compare with the original JSON string
     assert call.args[0].getvalue().decode("utf-8") == expected_catalogs[5]
     assert call.args[1] == bucket_name
-    assert call.args[2] == "harvested/" + catalogs_to_generate[2]["file_name_and_path"].replace(
-        "/", "/catalogs/"
-    )
+    assert call.args[2] == "harvested/" + catalogs_to_generate[2]["file_name_and_path"].replace("/", "/catalogs/")
 
     # Check final output is as expected
     assert created_keys == [
-        "harvested/" + file["file_name_and_path"].replace("/", "/catalogs/")
-        for file in catalogs_to_generate
+        "harvested/" + file["file_name_and_path"].replace("/", "/catalogs/") for file in catalogs_to_generate
     ]
 
 
 @mock.patch("boto3.client")
-def test_delete_catalogs(mock_boto_client):
-
+def test_delete_catalogs(mock_boto_client: MagicMock) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
 
     # Read expected catalogs
-    with open("config/required-files.json", "r") as file:
+    with open("config/required-files.json") as file:
         catalogs_to_generate = json.load(file)["catalogs"]
 
     # Replace workspace name in the catalog dictionary
     for catalog in catalogs_to_generate:
-        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace(
-            "{workspace_name}", workspace_name
-        )
+        catalog["file_name_and_path"] = catalog["file_name_and_path"].replace("{workspace_name}", workspace_name)
 
     # Create a mock S3 client
     mock_boto_client = mock.Mock()
@@ -276,16 +267,15 @@ def test_delete_catalogs(mock_boto_client):
 
 
 @mock.patch("pulsar.Producer")
-def test_send_pulsar_message(mock_pulsar_producer):
-
+def test_send_pulsar_message(mock_pulsar_producer: MagicMock) -> None:
     # Define test variable
     workspace_name = "test_ws"
     bucket_name = "test-bucket"
     created_keys = ["test-datasets/test-catalog/test-collection.json"]
-    deleted_keys = []
+    deleted_keys: list[str] = []
 
     # Generate test output message
-    test_msg = {
+    test_msg: dict[str, str | list[str]] = {
         "id": f"{workspace_name}-workspace-generator",
         "workspace": workspace_name,
         "branch": "",
@@ -310,21 +300,18 @@ def test_send_pulsar_message(mock_pulsar_producer):
 
 @mock.patch("io.BytesIO")
 @mock.patch("boto3.client")
-def test_create_files(mock_boto_client, mock_bytes_io):
-
+def test_create_files(mock_boto_client: MagicMock, mock_bytes_io: MagicMock) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
 
     # Read expected catalogs config
-    with open("config/required-files.json", "r") as file:
+    with open("config/required-files.json") as file:
         files_to_generate = json.load(file)["files"]
 
     # Replace workspace name in the catalog dictionary
     for file in files_to_generate:
-        file["file_name_and_path"] = file["file_name_and_path"].replace(
-            "{workspace_name}", workspace_name
-        )
+        file["file_name_and_path"] = file["file_name_and_path"].replace("{workspace_name}", workspace_name)
 
     # Construct expected catalogs
     with open("templates/public-readme.md") as f:
@@ -347,21 +334,18 @@ def test_create_files(mock_boto_client, mock_bytes_io):
 
 @mock.patch("io.BytesIO")
 @mock.patch("boto3.client")
-def test_delete_files(mock_boto_client, mock_bytes_io):
-
+def test_delete_files(mock_boto_client: MagicMock, mock_bytes_io: MagicMock) -> None:
     # Set test variables
     workspace_name = "test-ws"
     bucket_name = "test-bucket"
 
     # Read expected catalogs config
-    with open("config/required-files.json", "r") as file:
+    with open("config/required-files.json") as file:
         files_to_generate = json.load(file)["files"]
 
     # Replace workspace name in the catalog dictionary
     for file in files_to_generate:
-        file["file_name_and_path"] = file["file_name_and_path"].replace(
-            "{workspace_name}", workspace_name
-        )
+        file["file_name_and_path"] = file["file_name_and_path"].replace("{workspace_name}", workspace_name)
 
     # Create a mock S3 client
     mock_boto_client = mock.Mock()
@@ -379,7 +363,7 @@ def test_delete_files(mock_boto_client, mock_bytes_io):
 
 @patch("catalog_generator.__main__.logger")
 @patch("catalog_generator.__main__.boto3.client")
-def test_upload_file_to_s3_success(mock_boto_client, mock_logger):
+def test_upload_file_to_s3_success(mock_boto_client: MagicMock, mock_logger: MagicMock) -> None:
     # Arrange
     mock_client = mock_boto_client.return_value
     mock_client.upload_fileobj.return_value = None
@@ -401,7 +385,7 @@ def test_upload_file_to_s3_success(mock_boto_client, mock_logger):
 
 @patch("catalog_generator.__main__.logger")
 @patch("catalog_generator.__main__.boto3.client")
-def test_upload_file_to_s3_boto3_failure(mock_boto_client, mock_logger):
+def test_upload_file_to_s3_boto3_failure(mock_boto_client: MagicMock, mock_logger: MagicMock) -> None:
     # Arrange
     mock_client = mock_boto_client.return_value
     mock_client.upload_fileobj.side_effect = Exception("Boto3 upload failed")

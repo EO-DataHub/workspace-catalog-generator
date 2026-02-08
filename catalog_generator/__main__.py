@@ -4,11 +4,9 @@ import os
 import time
 import traceback
 from io import BytesIO
-from typing import List
 
 import boto3
 import botocore.client
-import botocore.exceptions
 import pulsar
 import pulsar.exceptions
 
@@ -48,7 +46,7 @@ with open("config/required-files.json") as f:
 
 
 def upload_file_to_s3(
-    client: botocore.client, file_name: str, bucket: str, data: dict, file_type: str = "file"
+    client: botocore.client.BaseClient, file_name: str, bucket: str, data: str, file_type: str = "file"
 ) -> bool:
     """
     Upload a file to an S3 bucket
@@ -56,27 +54,23 @@ def upload_file_to_s3(
     try:
         client.upload_fileobj(BytesIO(data.encode("utf-8")), bucket, file_name)
         # Log the S3 upload details
-        logger.info(
-            f"Uploaded {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
-        )
+        logger.info(f"Uploaded {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'")
         return True
     except Exception as e:
-        logger.error(
-            f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
-        )
+        logger.error(f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'")
         logger.error(e)
         return False
 
 
 def create_catalog(
-    client: botocore.client,
+    client: botocore.client.BaseClient,
     workspace_name: str,
     bucket_name: str,
     file_name_and_path: str,
     id: str,
     title: str,
     description: str,
-) -> List[str]:
+) -> str | None:
     """
     Create new catalog files in S3.
     """
@@ -96,7 +90,7 @@ def create_catalog(
         logger.error(f"No description provided in the configuration for {description}")
         missing_key = True
     if missing_key:
-        return
+        return None
 
     # Create a dictionary for the catalog
     catalog_dict["id"] = id.replace("{workspace_name}", workspace_name)
@@ -114,14 +108,14 @@ def create_catalog(
     file_uploaded = upload_file_to_s3(client, filename, bucket_name, catalog_json, "catalog")
     # Upload second file to harvested source
     if file_uploaded:
-        harvested_file_uploaded = upload_file_to_s3(
-            client, harvested_filename, bucket_name, catalog_json, "catalog"
-        )
+        harvested_file_uploaded = upload_file_to_s3(client, harvested_filename, bucket_name, catalog_json, "catalog")
         if harvested_file_uploaded:
             return harvested_filename
 
+    return None
 
-def create_catalogs(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+
+def create_catalogs(client: botocore.client.BaseClient, workspace_name: str, bucket_name: str) -> list[str]:
     """
     Create new catalog files in S3.
     """
@@ -143,7 +137,7 @@ def create_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     return created_files
 
 
-def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: str) -> List[str]:
+def delete_catalogs(client: botocore.client.BaseClient, workspace_name: str, bucket_name: str) -> list[str]:
     """
     Delete catalog files in S3.
     """
@@ -165,7 +159,7 @@ def delete_catalogs(client: botocore.client, workspace_name: str, bucket_name: s
     return deleted_keys
 
 
-def create_files(client: botocore.client, workspace_name: str, bucket_name: str):
+def create_files(client: botocore.client.BaseClient, workspace_name: str, bucket_name: str) -> None:
     """
     Create new files in S3.
     """
@@ -174,9 +168,7 @@ def create_files(client: botocore.client, workspace_name: str, bucket_name: str)
     for file_to_create in files_to_generate:
         filename = file_to_create.get("file_name_and_path")
         if not filename:
-            logger.error(
-                f"No key: 'file_name_and_path' provided in the configuration for {file_to_create}"
-            )
+            logger.error(f"No key: 'file_name_and_path' provided in the configuration for {file_to_create}")
             continue
         filename = filename.replace("{workspace_name}", workspace_name)
         file_template_path = file_to_create.get("template", "SOME EXAMPLE TEXT")
@@ -185,7 +177,7 @@ def create_files(client: botocore.client, workspace_name: str, bucket_name: str)
         upload_file_to_s3(client, filename, bucket_name, file_template, "file")
 
 
-def delete_files(client: botocore.client, workspace_name: str, bucket_name: str):
+def delete_files(client: botocore.client.BaseClient, workspace_name: str, bucket_name: str) -> None:
     """
     Delete files in S3.
     """
@@ -205,10 +197,10 @@ def delete_files(client: botocore.client, workspace_name: str, bucket_name: str)
             logger.error(e)
 
 
-def get_s3_client() -> boto3.client:
+def get_s3_client() -> botocore.client.BaseClient:
     """Generate boto3 client ready for S3 data access"""
     if os.getenv("AWS_ACCESS_KEY") and os.getenv("AWS_SECRET_ACCESS_KEY"):
-        session = boto3.session.Session(
+        session = boto3.Session(
             aws_access_key_id=os.environ["AWS_ACCESS_KEY"],
             aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
         )
@@ -220,7 +212,7 @@ def get_s3_client() -> boto3.client:
     return client
 
 
-def interpret_message(msg: str) -> tuple:
+def interpret_message(msg: str) -> tuple[str, str, list[str], list[str]]:
     """
     Interpret Pulsar message to create, update or delete catalogs in S3.
     """
@@ -235,8 +227,8 @@ def interpret_message(msg: str) -> tuple:
     bucket_name = msg_json["spec"]["aws"]["s3"]["buckets"][0]["name"]
     workspace_status = msg_json["event"]
 
-    created_keys = []
-    deleted_keys = []
+    created_keys: list[str] = []
+    deleted_keys: list[str] = []
 
     if workspace_status == "update":
         # This covers workspace creation and updates
@@ -252,7 +244,7 @@ def interpret_message(msg: str) -> tuple:
     return workspace_name, bucket_name, created_keys, deleted_keys
 
 
-def send_pulsar_message(msg: str, producer: pulsar.Producer):
+def send_pulsar_message(msg: dict[str, str | list[str]], producer: pulsar.Producer) -> None:
     """
     Send message via Pulsar.
     """
@@ -261,8 +253,8 @@ def send_pulsar_message(msg: str, producer: pulsar.Producer):
 
 
 def generate_output_message(
-    workspace_name: str, bucket_name: str, created_keys: List[str], deleted_keys: List[str]
-):
+    workspace_name: str, bucket_name: str, created_keys: list[str], deleted_keys: list[str]
+) -> dict[str, str | list[str]]:
     """
     Publish messages to a Pulsar broker.
     """
@@ -281,35 +273,31 @@ def generate_output_message(
     return output_msg
 
 
-def main(consumer: pulsar.Consumer, producer: pulsar.Producer):
+def main(consumer: pulsar.Consumer, producer: pulsar.Producer) -> None:
     """
     Accept messages from a Pulsar broker.
     """
     while True:
+        msg = None
         try:
             logger.info("Waiting for message")
             msg = consumer.receive()
             logging.info(f"Parsing harvested message {msg.data()}")
             decoded_msg = msg.data().decode("utf-8")
             workspace_name, bucket_name, created_keys, deleted_keys = interpret_message(decoded_msg)
-            output_msg = generate_output_message(
-                workspace_name, bucket_name, created_keys, deleted_keys
-            )
+            output_msg = generate_output_message(workspace_name, bucket_name, created_keys, deleted_keys)
             send_pulsar_message(output_msg, producer)
             consumer.acknowledge(msg)
         except Exception as err:
             logger.debug(traceback.format_exc())
             logger.error(err)
-            consumer.negative_acknowledge(msg)
+            if msg is not None:
+                consumer.negative_acknowledge(msg)
 
 
 if __name__ == "__main__":
     pulsar_url = os.environ.get("PULSAR_URL", "")
     client = pulsar.Client(pulsar_url)
-    consumer = client.subscribe(
-        topic="workspace-controller", subscription_name="workspace-catalog-generator"
-    )
-    producer = client.create_producer(
-        topic="harvested", producer_name="workspace-catalog-generator"
-    )
+    consumer = client.subscribe(topic="workspace-controller", subscription_name="workspace-catalog-generator")
+    producer = client.create_producer(topic="harvested", producer_name="workspace-catalog-generator")
     main(consumer, producer)
