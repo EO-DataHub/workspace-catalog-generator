@@ -80,6 +80,7 @@ build-backend = "hatchling.build"
 source = "uv-dynamic-versioning"
 
 [tool.uv]
+exclude-newer = "7 days"
 package = false
 
 [tool.pytest.ini_options]
