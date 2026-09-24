@@ -2,6 +2,8 @@ import json
 from unittest import mock
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from catalog_generator.__main__ import (
     create_catalogs,
     create_files,
@@ -11,6 +13,7 @@ from catalog_generator.__main__ import (
     interpret_message,
     send_pulsar_message,
     upload_file_to_s3,
+    workspace_controller_topics,
 )
 
 
@@ -403,3 +406,31 @@ def test_upload_file_to_s3_boto3_failure(mock_boto_client: MagicMock, mock_logge
         f"Failed to upload {file_type} '{file_name}' to S3 bucket '{bucket}' with key '{file_name}'"
     )
     assert not result
+
+
+@pytest.mark.parametrize(
+    ("env_value", "expected"),
+    [
+        pytest.param(None, "workspace-controller", id="unset"),
+        pytest.param("", "workspace-controller", id="empty"),
+        pytest.param(
+            "persistent://public/workspaces/workspace-controller",
+            "persistent://public/workspaces/workspace-controller",
+            id="single",
+        ),
+        pytest.param(
+            "workspace-controller, persistent://public/workspaces/workspace-controller",
+            ["workspace-controller", "persistent://public/workspaces/workspace-controller"],
+            id="list",
+        ),
+    ],
+)
+def test_workspace_controller_topics(
+    monkeypatch: pytest.MonkeyPatch, env_value: str | None, expected: str | list[str]
+) -> None:
+    if env_value is None:
+        monkeypatch.delenv("PULSAR_TOPIC_WORKSPACE_CONTROLLER", raising=False)
+    else:
+        monkeypatch.setenv("PULSAR_TOPIC_WORKSPACE_CONTROLLER", env_value)
+
+    assert workspace_controller_topics() == expected

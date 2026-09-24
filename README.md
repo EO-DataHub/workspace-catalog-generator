@@ -32,6 +32,13 @@ export AWS_ACCESS_KEY=<aws_access_key>
 export AWS_SECRET_ACCESS_KEY=<aws_secret_access_key>
 ```
 
+Optional:
+
+- `PULSAR_TOKEN_FILE`: path to a Pulsar token, re-read on every connection. `PULSAR_TOKEN` takes the token
+  itself. Without either the client connects anonymously.
+- `PULSAR_TOPIC_WORKSPACE_CONTROLLER`: topic to consume workspace events from (default `workspace-controller`).
+  A comma-separated list consumes from all of them with the same subscription.
+
 ### Run the service
 
 ```commandline

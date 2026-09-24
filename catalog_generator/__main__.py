@@ -10,6 +10,8 @@ import botocore.client
 import pulsar
 import pulsar.exceptions
 
+from catalog_generator.pulsar_auth import pulsar_authentication
+
 # create logger for stac fastapi ingester
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -295,9 +297,19 @@ def main(consumer: pulsar.Consumer, producer: pulsar.Producer) -> None:
                 consumer.negative_acknowledge(msg)
 
 
+def workspace_controller_topics() -> str | list[str]:
+    """
+    Topic or topics to consume workspace events from. PULSAR_TOPIC_WORKSPACE_CONTROLLER takes a
+    comma-separated list so an old and a new topic can be read together during a migration.
+    """
+    value = os.environ.get("PULSAR_TOPIC_WORKSPACE_CONTROLLER") or "workspace-controller"
+    topics = [topic.strip() for topic in value.split(",") if topic.strip()]
+    return topics[0] if len(topics) == 1 else topics
+
+
 if __name__ == "__main__":
     pulsar_url = os.environ.get("PULSAR_URL", "")
-    client = pulsar.Client(pulsar_url)
-    consumer = client.subscribe(topic="workspace-controller", subscription_name="workspace-catalog-generator")
+    client = pulsar.Client(pulsar_url, authentication=pulsar_authentication())
+    consumer = client.subscribe(topic=workspace_controller_topics(), subscription_name="workspace-catalog-generator")
     producer = client.create_producer(topic="harvested", producer_name="workspace-catalog-generator")
     main(consumer, producer)
